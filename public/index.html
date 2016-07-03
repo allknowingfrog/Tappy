@@ -12,17 +12,6 @@
 
                 var socket = io();
 
-                socket.emit('options', null, function(options) {
-                    for(var i=0; i<options.length; i++) {
-                        left.append(
-                            $('<option/>').val(options[i]).text(options[i])
-                        );
-                        right.append(
-                            $('<option/>').val(options[i]).text(options[i])
-                        );
-                    }
-                });
-
                 socket.on('update', function(board) {
                     var output = '';
                     for(var y=0; y<board.length; y++) {
@@ -31,7 +20,7 @@
                         }
                         output += '<br>';
                     }
-                    result.append(output + '<br>');
+                    result.prepend('<br>' + output);
                 });
 
                 $('#go').on('click', function() {
@@ -44,10 +33,9 @@
         </script>
     </head>
     <body>
-        <select id='left'></select>
-        <select id='right'></select>
+        <input type='text' id='left' style='width:500px'><br>
+        <input type='text' id='right' style='width:500px'><br>
         <input type='button' id='go' value='Challenge'>
-        <br>
         <div id='result'></div>
     </body>
 </html>
