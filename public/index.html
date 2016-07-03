@@ -1,0 +1,53 @@
+<!DOCTYPE>
+<html>
+    <head>
+        <meta charset='utf-8'>
+        <script src="http://code.jquery.com/jquery-3.0.0.min.js" integrity="sha256-JmvOoLtYsmqlsWxa7mDSLMwa6dZ9rrIdtrrVYRnDRH0=" crossorigin="anonymous"></script>
+        <script src='/socket.io/socket.io.js'></script>
+        <script>
+            $(document).ready(function() {
+                var left = $('#left');
+                var right = $('#right');
+                var result = $('#result');
+
+                var socket = io();
+
+                socket.emit('options', null, function(options) {
+                    for(var i=0; i<options.length; i++) {
+                        left.append(
+                            $('<option/>').val(options[i]).text(options[i])
+                        );
+                        right.append(
+                            $('<option/>').val(options[i]).text(options[i])
+                        );
+                    }
+                });
+
+                socket.on('update', function(board) {
+                    var output = '';
+                    for(var y=0; y<board.length; y++) {
+                        for(var x=0; x<board.length; x++) {
+                            output += board[x][y] + ' ';
+                        }
+                        output += '<br>';
+                    }
+                    result.append(output + '<br>');
+                });
+
+                $('#go').on('click', function() {
+                    result.empty();
+                    socket.emit('challenge', {left: left.val(), right: right.val()});
+                });
+
+                /**/
+            });
+        </script>
+    </head>
+    <body>
+        <select id='left'></select>
+        <select id='right'></select>
+        <input type='button' id='go' value='Challenge'>
+        <br>
+        <div id='result'></div>
+    </body>
+</html>
