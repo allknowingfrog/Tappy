@@ -1,4 +1,6 @@
-module.exports = function(size) {
+module.exports = function(size, socket) {
+    this.socket = socket;
+
     var cells = new Array(size);
     var teams = {};
     var players = [];

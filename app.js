@@ -7,6 +7,9 @@ var io = require('socket.io')(http);
 
 var request = require('request');
 
+var games = [];
+var running = false;
+
 var MAX_TURNS = 100;
 var BOARD_SIZE = 5;
 
@@ -17,7 +20,7 @@ io.on('connection', function(socket) {
         console.log('received challenge');
 
         var edge = BOARD_SIZE - 1;
-        var board = new Board(BOARD_SIZE);
+        var board = new Board(BOARD_SIZE, socket);
 
         board.addTeam(1, endpoints.left);
         board.addTeam(2, endpoints.right);
@@ -29,35 +32,50 @@ io.on('connection', function(socket) {
         board.addPlayer(1, edge, edge);
         board.addPlayer(2, 0, edge);
 
-        process(socket, board);
+        games.push(board);
     });
 });
 
-function process(socket, board) {
-    var player = board.next();
+console.log('running');
 
-    var data = {
-        url: player.team.endpoint,
-        formData: {
-            board: JSON.stringify(board.encode(player))
-        }
-    };
+function process() {
+    if(running) return;
 
-    request.post(data, function(err, res, body) {
-        if(board.move(player, parseInt(body)) < MAX_TURNS) {
-            socket.emit('update', board.encode(null));
-            var team = board.winner();
-            if(team) {
-                socket.emit('winner', team.id);
-            } else {
-                process(socket, board);
+    running = true;
+
+    var board;
+    while(true) {
+        if(!games.length) break;
+
+        board = games.shift();
+
+        var player = board.next();
+
+        var data = {
+            url: player.team.endpoint,
+            formData: {
+                board: JSON.stringify(board.encode(player))
             }
-        } else {
-            socket.emit('update', board.encode(null));
-        }
-    });
+        };
+
+        request.post(data, function(err, res, body) {
+            if(board.move(player, parseInt(body)) < MAX_TURNS) {
+                board.socket.emit('update', board.encode(null));
+                var team = board.winner();
+                if(team) {
+                    board.socket.emit('winner', team.id);
+                } else {
+                    games.push(board);
+                }
+            } else {
+                board.socket.emit('update', board.encode(null));
+            }
+        });
+    }
+
+    running = false;
 }
 
-/**/
+setInterval(process, 1000);
 
-console.log('running');
+/**/
