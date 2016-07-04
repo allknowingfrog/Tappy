@@ -1,13 +1,13 @@
 <?
     $board = json_decode($_POST['board']);
 
-    if($_POST['player'] == 2) {
+    if($_GET['strategy'] == 2) {
         foreach($board as $x => $col) {
             foreach($col as $y => $cell) {
-                if($cell == 1) {
+                if($cell == 2) {
                     $x1 = $x;
                     $y1 = $y;
-                } elseif($cell == 2) {
+                } elseif($cell == 9) {
                     $x2 = $x;
                     $y2 = $y;
                 }
