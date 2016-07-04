@@ -25,9 +25,9 @@ io.on('connection', function(socket) {
         board.addBarrier(2, 2);
 
         board.addPlayer(1, 0, 0);
-        board.addPlayer(1, 0, edge);
         board.addPlayer(2, edge, 0);
-        board.addPlayer(2, edge, edge);
+        board.addPlayer(1, edge, edge);
+        board.addPlayer(2, 0, edge);
 
         process(socket, board);
     });
@@ -46,7 +46,10 @@ function process(socket, board) {
     request.post(data, function(err, res, body) {
         if(board.move(player, parseInt(body)) < MAX_TURNS) {
             socket.emit('update', board.encode(null));
-            if(board.play()) {
+            var team = board.winner();
+            if(team) {
+                socket.emit('winner', team.id);
+            } else {
                 process(socket, board);
             }
         } else {

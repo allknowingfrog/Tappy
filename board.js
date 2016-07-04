@@ -107,19 +107,19 @@ module.exports = function(size) {
         return board;
     };
 
-    this.play = function() {
+    this.winner = function() {
         var team;
         for(var i=0; i<players.length; i++) {
             if(players[i].alive) {
                 if(team) {
-                    if(players[i].team != team) return true;
+                    if(players[i].team != team) return null;
                 } else {
                     team = players[i].team;
                 }
             }
         }
 
-        return false;
+        return team;
     };
 
     this.next = function() {

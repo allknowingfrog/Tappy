@@ -23,6 +23,10 @@
                     result.prepend('<br>' + output);
                 });
 
+                socket.on('winner', function(team) {
+                    result.prepend('<br> Team '+team+' wins<br>');
+                });
+
                 $('#go').on('click', function() {
                     result.empty();
                     socket.emit('challenge', {left: left.val(), right: right.val()});
