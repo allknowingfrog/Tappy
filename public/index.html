@@ -6,21 +6,39 @@
         <script src='/socket.io/socket.io.js'></script>
         <script>
             $(document).ready(function() {
+                var socket = io();
+
                 var left = $('#left');
                 var right = $('#right');
                 var result = $('#result');
 
-                var socket = io();
+                var SPRITE_SIZE = 32;
+
+                var canvas = document.getElementById('view');
+                var ctx = canvas.getContext('2d');
+
+                socket.emit('init', null, function(size) {
+                    canvas.width = size * SPRITE_SIZE + 4;
+                    canvas.height = size * SPRITE_SIZE + 4;
+                });
+
+                var updates = [];
+                var turn = 0;
+
+                var view = $('#view');
+
+                var updates = [];
+                var turn = 0;
+
+                var view = $('#view');
 
                 socket.on('update', function(board) {
-                    var output = '';
-                    for(var y=0; y<board.length; y++) {
-                        for(var x=0; x<board.length; x++) {
-                            output += board[x][y] + ' ';
-                        }
-                        output += '<br>';
+                    updates.push(board);
+
+                    if(turn == updates.length - 2) {
+                        turn++;
+                        drawBoard();
                     }
-                    result.prepend('<br>' + output);
                 });
 
                 socket.on('winner', function(team) {
@@ -28,18 +46,73 @@
                 });
 
                 $('#go').on('click', function() {
+                    updates = [];
                     result.empty();
                     socket.emit('challenge', {left: left.val(), right: right.val()});
                 });
 
+                function drawBoard() {
+                    board = updates[turn];
+
+                    var output = '';
+                    for(var y=0; y<board.length; y++) {
+                        for(var x=0; x<board.length; x++) {
+                            switch(board[x][y]) {
+                                case 0:
+                                    drawBox('green', x, y);
+                                    break;
+                                case 8:
+                                    drawBox('gray', x, y);
+                                    break;
+                                case 1:
+                                    drawBox('red', x, y);
+                                    break;
+                                case 2:
+                                    drawBox('blue', x, y);
+                                    break;
+                            }
+                        }
+                    }
+                }
+
+                $('#back').on('click', function() {
+                    if(turn > 0) {
+                        turn--;
+                        drawBoard();
+                    }
+                });
+
+                $('#forward').on('click', function() {
+                    if(turn < updates.length - 1) {
+                        turn++;
+                        drawBoard();
+                    }
+                });
+
+                function drawBox(color, x, y) {
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x * SPRITE_SIZE + 4, y * SPRITE_SIZE + 4, SPRITE_SIZE - 4, SPRITE_SIZE - 4);
+                }
+
                 /**/
             });
         </script>
+        <style>
+            #view {
+                background-color: black;
+                display: block;
+            }
+        </style>
     </head>
     <body>
         <input type='text' id='left' style='width:500px'><br>
         <input type='text' id='right' style='width:500px'><br>
         <input type='button' id='go' value='Fight'>
+        <canvas id='view'></canvas>
+        <div id='nav'>
+            <input type='button' id='back' value='Back'>
+            <input type='button' id='forward' value='Forward'>
+        </div>
         <div id='result'></div>
     </body>
 </html>

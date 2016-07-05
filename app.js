@@ -16,6 +16,10 @@ var BOARD_SIZE = 5;
 app.use(express.static(__dirname + '/public'));
 
 io.on('connection', function(socket) {
+    socket.on('init', function(data, callback) {
+        callback(BOARD_SIZE);
+    });
+
     socket.on('challenge', function(endpoints) {
         console.log('received challenge');
 
@@ -33,6 +37,8 @@ io.on('connection', function(socket) {
         board.addPlayer(2, 0, edge);
 
         games.push(board);
+
+        board.socket.emit('update', board.encode(null));
     });
 });
 
