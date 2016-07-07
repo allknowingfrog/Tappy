@@ -47,6 +47,7 @@
 
                 $('#go').on('click', function() {
                     updates = [];
+                    turn = 0;
                     result.empty();
                     socket.emit('challenge', {left: left.val(), right: right.val()});
                 });
@@ -54,22 +55,24 @@
                 function drawBoard() {
                     board = updates[turn];
 
+                    var target, color;
                     var output = '';
                     for(var y=0; y<board.length; y++) {
                         for(var x=0; x<board.length; x++) {
-                            switch(board[x][y]) {
-                                case 0:
-                                    drawBox('green', x, y);
-                                    break;
-                                case 8:
-                                    drawBox('gray', x, y);
-                                    break;
-                                case 1:
-                                    drawBox('red', x, y);
-                                    break;
-                                case 2:
-                                    drawBox('blue', x, y);
-                                    break;
+                            target = board[x][y];
+                            if(!target) {
+                                drawBox('green', x, y);
+                            } else if(target.type == 'barrier') {
+                                drawBox('gray', x, y);
+                            } else if(target.type == 'player') {
+                                if(target.team == 1) {
+                                    color = 'red';
+                                } else if(target.team == 2) {
+                                    color = 'blue';
+                                }
+
+                                drawBox(color, x, y);
+                                if(target.health < 100) drawHealth(target.health, x, y);
                             }
                         }
                     }
@@ -92,6 +95,12 @@
                 function drawBox(color, x, y) {
                     ctx.fillStyle = color;
                     ctx.fillRect(x * SPRITE_SIZE + 4, y * SPRITE_SIZE + 4, SPRITE_SIZE - 4, SPRITE_SIZE - 4);
+                }
+
+                function drawHealth(health, x, y) {
+                    ctx.font = 'bold 14px Arial';
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(health, x * SPRITE_SIZE + 10, y * SPRITE_SIZE + 20);
                 }
 
                 /**/

@@ -21,24 +21,27 @@ io.on('connection', function(socket) {
     });
 
     socket.on('challenge', function(endpoints) {
-        console.log('received challenge');
+        if(!socket.playing) {
+            console.log('received challenge');
+            socket.playing = true;
 
-        var edge = BOARD_SIZE - 1;
-        var board = new Board(BOARD_SIZE, socket);
+            var edge = BOARD_SIZE - 1;
+            var board = new Board(BOARD_SIZE, socket);
 
-        board.addTeam(1, endpoints.left);
-        board.addTeam(2, endpoints.right);
+            board.addTeam(1, endpoints.left);
+            board.addTeam(2, endpoints.right);
 
-        board.addBarrier(2, 2);
+            board.addBarrier(2, 2);
 
-        board.addPlayer(1, 0, 0);
-        board.addPlayer(2, edge, 0);
-        board.addPlayer(1, edge, edge);
-        board.addPlayer(2, 0, edge);
+            board.addPlayer(1, 0, 0);
+            board.addPlayer(2, edge, 0);
+            board.addPlayer(1, edge, edge);
+            board.addPlayer(2, 0, edge);
 
-        games.push(board);
+            games.push(board);
 
-        board.socket.emit('update', board.encode(null));
+            board.socket.emit('update', board.encode());
+        }
     });
 });
 
@@ -60,21 +63,24 @@ function process() {
         var data = {
             url: player.team.endpoint,
             formData: {
-                board: JSON.stringify(board.encode(player))
+                player: JSON.stringify([player.x, player.y]),
+                board: JSON.stringify(board.encode())
             }
         };
 
         request.post(data, function(err, res, body) {
-            if(board.move(player, parseInt(body)) < MAX_TURNS) {
-                board.socket.emit('update', board.encode(null));
+            if(board.move(player, body) < MAX_TURNS) {
+                board.socket.emit('update', board.encode());
                 var team = board.winner();
                 if(team) {
                     board.socket.emit('winner', team.id);
+                    board.socket.playing = false;
                 } else {
                     games.push(board);
                 }
             } else {
-                board.socket.emit('update', board.encode(null));
+                board.socket.emit('update', board.encode());
+                board.socket.playing = false;
             }
         });
     }

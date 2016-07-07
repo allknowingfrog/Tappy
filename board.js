@@ -35,25 +35,25 @@ module.exports = function(size, socket) {
         console.log([x, y, dir]);
 
         switch(dir) {
-            case 0:
+            case 'W':
                 if(x > 0) {
                     x--;
                     update(player, x, y);
                 }
                 break;
-            case 1:
+            case 'N':
                 if(y > 0) {
                     y--;
                     update(player, x, y);
                 }
                 break;
-            case 2:
+            case 'E':
                 if(x < size - 1) {
                     x++;
                     update(player, x, y);
                 }
                 break;
-            case 3:
+            case 'S':
                 if(y < size - 1) {
                     y++;
                     update(player, x, y);
@@ -67,12 +67,17 @@ module.exports = function(size, socket) {
     };
 
     function update(player, x, y) {
-        if(cells[x][y] instanceof Barrier) return;
+        var target = cells[x][y];
 
-        if(cells[x][y] instanceof Player) {
-            if(cells[x][y].team == player.team) return;
+        if(target instanceof Barrier) return;
 
-            cells[x][y].alive = false;
+        if(target instanceof Player) {
+            if(target.team != player.team) {
+                target.health -= 10;
+                if(target.health <= 0) cells[x][y] = null;
+            }
+
+            return;
         }
 
         cells[player.x][player.y] = null;
@@ -81,7 +86,7 @@ module.exports = function(size, socket) {
         player.y = y;
     }
 
-    this.encode = function(player) {
+    this.encode = function() {
         var board = new Array(size);
         var target;
         for(var x=0; x<size; x++) {
@@ -89,19 +94,17 @@ module.exports = function(size, socket) {
             for(var y=0; y<size; y++) {
                 target = cells[x][y];
                 if(target == null) {
-                    board[x][y] = 0;
+                    board[x][y] = null;
                 } else if(target instanceof Barrier) {
-                    board[x][y] = 8;
-                } else if(player) {
-                    if(target == player) {
-                        board[x][y] = 9;
-                    } else if(target.team == player.team) {
-                        board[x][y] = 1;
-                    } else {
-                        board[x][y] = 2;
-                    }
+                    board[x][y] = {
+                        type: 'barrier'
+                    };
                 } else {
-                    board[x][y] = target.team.id;
+                    board[x][y] = {
+                        type: 'player',
+                        health: target.health,
+                        team: target.team.id
+                    };
                 }
             }
         }
@@ -112,7 +115,7 @@ module.exports = function(size, socket) {
     this.winner = function() {
         var team;
         for(var i=0; i<players.length; i++) {
-            if(players[i].alive) {
+            if(players[i].health > 0) {
                 if(team) {
                     if(players[i].team != team) return null;
                 } else {
@@ -128,7 +131,7 @@ module.exports = function(size, socket) {
         while(true) {
             current++;
             if(current >= players.length) current = 0;
-            if(players[current].alive) break;
+            if(players[current].health > 0) break;
         }
 
         return players[current];
@@ -143,7 +146,7 @@ module.exports = function(size, socket) {
         this.team = team;
         this.x = x;
         this.y = y;
-        this.alive = true;
+        this.health = 100;
     };
 
     function Barrier(x, y) {
