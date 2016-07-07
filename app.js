@@ -21,27 +21,27 @@ io.on('connection', function(socket) {
     });
 
     socket.on('challenge', function(endpoints) {
-        if(!socket.playing) {
-            console.log('received challenge');
-            socket.playing = true;
+        if(socket.board) socket.board.halt = true;
 
-            var edge = BOARD_SIZE - 1;
-            var board = new Board(BOARD_SIZE, socket);
+        console.log('received challenge');
 
-            board.addTeam(1, endpoints.left);
-            board.addTeam(2, endpoints.right);
+        var edge = BOARD_SIZE - 1;
+        var board = new Board(BOARD_SIZE, socket);
 
-            board.addBarrier(2, 2);
+        board.addTeam(1, endpoints.left);
+        board.addTeam(2, endpoints.right);
 
-            board.addPlayer(1, 0, 0);
-            board.addPlayer(2, edge, 0);
-            board.addPlayer(1, edge, edge);
-            board.addPlayer(2, 0, edge);
+        board.addBarrier(2, 2);
 
-            games.push(board);
+        board.addPlayer(1, 0, 0);
+        board.addPlayer(2, edge, 0);
+        board.addPlayer(1, edge, edge);
+        board.addPlayer(2, 0, edge);
 
-            board.socket.emit('update', board.encode());
-        }
+        games.push(board);
+        socket.board = board;
+
+        socket.emit('update', board.encode());
     });
 });
 
@@ -57,6 +57,8 @@ function process() {
         if(!games.length) break;
 
         board = games.shift();
+
+        if(board.halt) continue;
 
         var player = board.next();
 
@@ -74,13 +76,15 @@ function process() {
                 var team = board.winner();
                 if(team) {
                     board.socket.emit('winner', team.id);
-                    board.socket.playing = false;
+                    board.halt = true;
+                    board.socket.board = null;
                 } else {
-                    games.push(board);
+                    if(!board.halt) games.push(board);
                 }
             } else {
-                board.socket.emit('update', board.encode());
-                board.socket.playing = false;
+                board.socket.emit('winner', -1);
+                board.halt = true;
+                board.socket.board = null;
             }
         });
     }

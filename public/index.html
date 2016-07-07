@@ -42,10 +42,15 @@
                 });
 
                 socket.on('winner', function(team) {
-                    result.prepend('<br> Team '+team+' wins<br>');
+                    if(team == -1) {
+                        result.html('<br>Draw<br>');
+                    } else {
+                        result.html('<br>Team '+team+' wins<br>');
+                    }
                 });
 
                 $('#go').on('click', function() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
                     updates = [];
                     turn = 0;
                     result.empty();

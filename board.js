@@ -1,5 +1,6 @@
 module.exports = function(size, socket) {
     this.socket = socket;
+    this.halt = false;
 
     var cells = new Array(size);
     var teams = {};
@@ -73,7 +74,7 @@ module.exports = function(size, socket) {
 
         if(target instanceof Player) {
             if(target.team != player.team) {
-                target.health -= 10;
+                target.health -= 20;
                 if(target.health <= 0) cells[x][y] = null;
             }
 
