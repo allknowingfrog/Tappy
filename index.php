@@ -1,15 +1,53 @@
 <?
-$board = json_decode($_POST['board']);
+/*
+$board = array(
+    array(null,null,null,null,null),
+    array(null,null,null,null,null),
+    array(null,null,null,null,null),
+    array(null,null,null,null,null),
+    array(null,null,null,null,null)
+);
+
+$board[2][2] = array(
+    'type' => 'barrier'
+);
+$board[3][2] = array(
+    'type' => 'player',
+    'health' => 100,
+    'team' => 1
+);
+$board[4][2] = array(
+    'type' => 'player',
+    'health' => 100,
+    'team' => 1
+);
+$board[2][3] = array(
+    'type' => 'player',
+    'health' => 100,
+    'team' => 2
+);
+$board[2][4] = array(
+    'type' => 'player',
+    'health' => 100,
+    'team' => 2
+);
+
+$me = array(2, 3);
+
+$_GET['strategy'] = 'chase';
+/**/
+
+$me = json_decode($_POST['player'], true);
+$board = json_decode($_POST['board'], true);
+$player = $board[$me[0]][$me[1]];
 
 switch($_GET['strategy']) {
     case 'chase':
         $enemies = array();
         foreach($board as $x => $col) {
             foreach($col as $y => $cell) {
-                if($cell == 2) {
+                if($cell['type'] == 'player' && $cell['team'] != $player['team']) {
                     $enemies[] = array($x, $y);
-                } elseif($cell == 9) {
-                    $me = array($x, $y);
                 }
             }
         }
@@ -24,111 +62,71 @@ switch($_GET['strategy']) {
             }
         }
 
+        $options = array(
+            'W' => validMove($player, $board, $me[0] - 1, $me[1]),
+            'N' => validMove($player, $board, $me[0], $me[1] - 1),
+            'E' => validMove($player, $board, $me[0] + 1, $me[1]),
+            'S' => validMove($player, $board, $me[0], $me[1] + 1)
+        );
+
         $dx = $target[0] - $me[0];
         $dy = $target[1] - $me[1];
 
-        if($dx > 0) {
-            $x = 2;
-        } else {
-            $x = 0;
-        }
-
-        if($dy > 0) {
-            $y = 3;
-        } else {
-            $y = 1;
-        }
-
-        $xValid = false;
-        $yValid = false;
-
-        if($x == 2) {
-            $tmp = $board[$me[0] + 1][$me[1]];
-            if($tmp == 0 || $tmp == 2) {
-                $xValid = true;
-            }
-        } else {
-            $tmp = $board[$me[0] - 1][$me[1]];
-            if($tmp == 0 || $tmp == 2) {
-                $xValid = true;
+        $move = null;
+        if(abs($dx) >= abs($dy)) {
+            if($dx <= 0 && $options['W']) {
+                $move = 'W';
+            } elseif($options['E']) {
+                $move = 'E';
             }
         }
 
-        if($y == 3) {
-            $tmp = $board[$me[0]][$me[1] + 1];
-            if($tmp == 0 || $tmp == 2) {
-                $yValid = true;
-            }
-        } else {
-            $tmp = $board[$me[0]][$me[1] - 1];
-            if($tmp == 0 || $tmp == 2) {
-                $yValid = true;
+        if(!$move) {
+            if($dy <= 0 && $options['N']) {
+                $move = 'N';
+            } elseif($options['S']) {
+                $move = 'S';
             }
         }
 
-        if(!$xValid) {
-            echo $y;
-        } elseif(!$yValid) {
-            echo $x;
-        } elseif(abs($dx) > abs($dy)) {
-            echo $x;
-        } else {
-            echo $y;
-        }
+        echo $move;
 
         break;
 
     case 'run':
-        $done = false;
-        foreach($board as $x => $col) {
-            foreach($col as $y => $cell) {
-                if($cell == 9) {
-                    $me = array($x, $y);
-                    $done = true;
-                    break;
-                }
-            }
-            if($done) break;
-        }
-
-        if($board[$me[0]+1][$me[1]] == 2) {
-            echo 0;
-        } elseif($board[$me[0]][$me[1]+1] == 2) {
-            echo 1;
-        } elseif($board[$me[0]-1][$me[1]] == 2) {
-            echo 2;
-        } elseif($board[$me[0]][$me[1]-1] == 2) {
-            echo 3;
+        if(validMove($player, $board, $me[0]-1, $me[1], true)) {
+            echo 'W';
+        } elseif(validMove($player, $board, $me[0], $me[1]-1, true)) {
+            echo 'N';
+        } elseif(validMove($player, $board, $me[0]+1, $me[1], true)) {
+            echo 'E';
+        } elseif(validMove($player, $board, $me[0], $me[1]+1, true)) {
+            echo 'S';
         } else {
-            echo rand(0, 3);
+            $options = array('W', 'N', 'E', 'S');
+            $index = rand(0, 3);
+            echo $options[$index];
         }
 
         break;
 
     default:
-        echo rand(0, 3);
+        $options = array('W', 'N', 'E', 'S');
+        $index = rand(0, 3);
+        echo $options[$index];
 }
 
-/*
-if(true) {
-    $board = array(
-        array(0,0,0,0,0),
-        array(0,0,0,0,0),
-        array(0,0,8,0,0),
-        array(0,0,0,0,0),
-        array(0,0,0,0,0)
-    );
+function validMove($player, $board, $x, $y, $run=false) {
+    if($x < 0 || $x >= count($board)) return false;
+    if($y < 0 || $y >= count($board)) return false;
 
-    $board[0][0] = 2;
-    $board[2][0] = 1;
-    $board[2][4] = 2;
-    $board[1][4] = 9;
-
-    for($y=0; $y<5; $y++) {
-        for($x=0; $x<5; $x++) {
-            echo $board[$x][$y] . ' ';
-        }
-        echo "\n";
+    $tmp = $board[$x][$y];
+    if($tmp['type'] == 'barrier') return false;
+    if($tmp['type'] == 'player') {
+        if($run) return false;
+        if($tmp['team'] == $player['team']) return false;
     }
-*/
+
+    return true;
+}
 ?>
